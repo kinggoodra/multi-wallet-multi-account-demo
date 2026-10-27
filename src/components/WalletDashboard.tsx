@@ -5,6 +5,24 @@ import { useConnect, useConnections, useConnectors, useDisconnect, usePublicClie
 import { isAddress, type Address } from "viem";
 
 type WatchedAccount = {connectorUid:string; wallet:string; address:Address; chainId:number};
+type ConnectorWithIcon = { uid:string; name:string; icon?:string };
+
+function ConnectorIcon({ connector }: { connector: ConnectorWithIcon }) {
+  const fallback = connector.name.slice(0, 1).toUpperCase();
+
+  if (connector.icon) {
+    return (
+      <img
+        className="connector-icon"
+        src={connector.icon}
+        alt=""
+        aria-hidden="true"
+      />
+    );
+  }
+
+  return <span className="connector-icon connector-icon-fallback" aria-hidden="true">{fallback}</span>;
+}
 
 export default function WalletDashboard() {
   const connectors = useConnectors();
@@ -62,13 +80,29 @@ export default function WalletDashboard() {
     <h1>Multi-Wallet + Multi-Account</h1>
     <p className="muted">Connect MetaMask, Trust Wallet, Rabby or other EIP-6963 wallets. Track multiple addresses. Signing is restricted to the extension-authorized account.</p>
     <section className="panel"><h2>1. Connect wallet extensions</h2>
-      <div className="cards">{connectors.map(c=><div className="card" key={c.uid}>
-        <strong>{c.name}</strong><div><button disabled={isPending} onClick={()=>connect({connector:c})}>Connect</button></div>
-      </div>)}</div>{error&&<p className="warn">{error.message}</p>}
+      <div className="cards">{connectors.map(c=>{
+        const connector = c as typeof c & ConnectorWithIcon;
+        return <div className="card connector-card" key={c.uid}>
+          <div className="connector-brand">
+            <ConnectorIcon connector={connector} />
+            <div>
+              <strong>{c.name}</strong>
+              <span className="caption">Wallet connector</span>
+            </div>
+          </div>
+          <div><button disabled={isPending} onClick={()=>connect({connector:c})}>Connect</button></div>
+        </div>;
+      })}</div>{error&&<p className="warn">{error.message}</p>}
     </section>
     <section className="panel"><h2>2. Connected wallets</h2>
-      {connections.length===0?<p className="muted">No wallet connected yet.</p>:connections.map(c=><div className="card" key={c.connector.uid}>
-        <strong>{c.connector.name}</strong><p>Chain {c.chainId} • Exposed accounts: {c.accounts.length}</p>
+      {connections.length===0?<p className="muted">No wallet connected yet.</p>:connections.map(c=><div className="card connector-card" key={c.connector.uid}>
+        <div className="connector-brand">
+          <ConnectorIcon connector={c.connector as typeof c.connector & ConnectorWithIcon} />
+          <div>
+            <strong>{c.connector.name}</strong>
+            <span className="caption">Chain {c.chainId} • {c.accounts.length} account{c.accounts.length === 1 ? "" : "s"}</span>
+          </div>
+        </div>
         <button onClick={()=>disconnect({connector:c.connector})}>Disconnect</button>
       </div>)}
     </section>
