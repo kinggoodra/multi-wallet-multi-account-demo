@@ -474,7 +474,9 @@ export default function WalletDashboard() {
 
         {connectionStatus === "error" && !pendingConnectorUid && (
           <p className="warn">
-            {error?.message ?? "The wallet connection failed."}
+            {error?.message?.includes("Connector already connected")
+              ? "Connector already connected."
+              : error?.message ?? "The wallet connection failed."}
           </p>
         )}
       </section>
