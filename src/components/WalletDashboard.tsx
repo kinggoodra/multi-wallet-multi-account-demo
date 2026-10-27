@@ -10,54 +10,10 @@ import {
   type Connector,
 } from "wagmi";
 import { isAddress, type Address } from "viem";
-
-type WatchedAccount = {
-  connectorUid: string;
-  wallet: string;
-  address: Address;
-  chainId: number;
-};
-
-type ConnectorWithIcon = {
-  uid: string;
-  name: string;
-  icon?: string;
-};
-
-type ConnectionStatus =
-  | "idle"
-  | "connecting"
-  | "connected"
-  | "rejected"
-  | "error";
-
-function ConnectorIcon({
-  connector,
-}: {
-  connector: ConnectorWithIcon;
-}) {
-  const fallback = connector.name.slice(0, 1).toUpperCase();
-
-  if (connector.icon) {
-    return (
-      <img
-        className="connector-icon"
-        src={connector.icon}
-        alt=""
-        aria-hidden="true"
-      />
-    );
-  }
-
-  return (
-    <span
-      className="connector-icon connector-icon-fallback"
-      aria-hidden="true"
-    >
-      {fallback}
-    </span>
-  );
-}
+import ConnectWalletExtensions from "./wallet/ConnectWalletExtensions";
+import AddWatchedAddress from "./wallet/AddWatchedAddress";
+import ManagedAccounts from "./wallet/ManagedAccounts";
+import type { WatchedAccount, ConnectorWithIcon, ConnectionStatus } from "./wallet/types";
 
 export default function WalletDashboard() {
   const connectors = useConnectors();
@@ -409,190 +365,43 @@ export default function WalletDashboard() {
         extension-authorized account.
       </p>
 
-      <section className="panel">
-        <h2>1. Connect wallet extensions</h2>
+      <ConnectWalletExtensions
+        connectors={connectors}
+        connections={connections}
+        pendingConnectorUid={pendingConnectorUid}
+        pendingConnectorName={pendingConnectorName}
+        cancelHelpShown={cancelHelpShown}
+        connectionStatus={connectionStatus}
+        errorMessage={error?.message}
+        onConnect={handleConnect}
+        onDisconnect={handleDisconnect}
+        onCancelConnection={handleCancelConnection}
+      />
 
-        {pendingConnectorUid && (
-          <div className="connection-status" role="status">
-            <div>
-              <strong>Waiting for wallet approval</strong>
-              <span className="caption">
-                {pendingConnectorName} is waiting for your response.
-              </span>
-              {cancelHelpShown && (
-                <span className="caption">
-                  Open the wallet popup and select Reject. This app cannot
-                  programmatically reject the wallet's native request.
-                </span>
-              )}
-            </div>
+      <AddWatchedAddress
+        connections={connections}
+        walletUid={walletUid}
+        address={address}
+        message={message}
+        disabled={!!pendingConnectorUid}
+        onWalletChange={setWalletUid}
+        onAddressChange={setAddress}
+        onAdd={addWatch}
+      />
 
-            <button
-              className="secondary-button"
-              onClick={handleCancelConnection}
-            >
-              Cancel request
-            </button>
-          </div>
-        )}
-
-        <div className="cards">
-          {connectors.map((c) => {
-            const connector = c as typeof c & ConnectorWithIcon;
-            const isThisConnectorPending =
-              pendingConnectorUid === c.uid;
-            const isConnected = connections.some(
-              (connection) => connection.connector.uid === c.uid,
-            );
-
-            return (
-              <div className="card connector-card" key={c.uid}>
-                <div className="connector-brand">
-                  <ConnectorIcon connector={connector} />
-
-                  <div>
-                    <strong>{c.name}</strong>
-                    <span className="caption">
-                      {isThisConnectorPending
-                        ? "Waiting for approval..."
-                        : isConnected
-                          ? "Connected"
-                          : "Not connected"}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  {isConnected ? (
-                    <button
-                      className="secondary-button"
-                      disabled={isThisConnectorPending || !!pendingConnectorUid}
-                      onClick={() => handleDisconnect(c)}
-                    >
-                      Disconnect
-                    </button>
-                  ) : (
-                    <button
-                      disabled={!!pendingConnectorUid}
-                      onClick={() => handleConnect(c)}
-                    >
-                      {isThisConnectorPending ? "Waiting..." : "Connect"}
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {connectionStatus === "rejected" && (
-          <p className="warn">
-            The wallet request was rejected or cancelled.
-          </p>
-        )}
-
-        {connectionStatus === "error" && !pendingConnectorUid && (
-          <p className="warn">
-            {error?.message?.includes("Connector already connected")
-              ? "Connector already connected."
-              : error?.message ?? "The wallet connection failed."}
-          </p>
-        )}
-      </section>
-
-      <section className="panel">
-        <h2>2. Add another address (Watch only)</h2>
-
-        <p className="caption">
-          Adding an address does NOT authorize it to sign transactions.
-        </p>
-
-        <select
-          value={walletUid}
-          onChange={(e) => setWalletUid(e.target.value)}
-          disabled={!!pendingConnectorUid}
-        >
-          <option value="">Choose a connected wallet</option>
-
-          {connections.map((c) => (
-            <option key={c.connector.uid} value={c.connector.uid}>
-              {c.connector.name}
-            </option>
-          ))}
-        </select>
-
-        <input
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          placeholder="0x... public address"
-          disabled={!!pendingConnectorUid}
-        />
-
-        <button
-          onClick={addWatch}
-          disabled={!!pendingConnectorUid}
-        >
-          Register address
-        </button>
-
-        <p role="status">{message}</p>
-      </section>
-
-      <section className="panel">
-        <h2>3. Managed accounts</h2>
-
-        {entries.length === 0 ? (
-          <p className="muted">
-            Connect and register accounts to begin.
-          </p>
-        ) : (
-          entries.map((a) => (
-            <div className="account" key={a.id}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={selected.includes(a.id)}
-                  onChange={(e) =>
-                    setSelected((old) =>
-                      e.target.checked
-                        ? [...old, a.id]
-                        : old.filter((x) => x !== a.id),
-                    )
-                  }
-                />
-
-                <strong>{a.wallet}</strong> —
-                {a.canSign ? (
-                  <span className="ok">Active signer candidate</span>
-                ) : (
-                  <span className="warn">
-                    Watch-only / switch required
-                  </span>
-                )}
-              </label>
-
-              <div className="address">{a.address}</div>
-
-              <div className="caption">
-                Chain {a.chainId} • Native balance:{" "}
-                {a.chainId === client?.chain.id
-                  ? balances[a.id] ?? "Loading..."
-                  : "Change read network"}
-              </div>
-            </div>
-          ))
-        )}
-
-        <p>
-          <strong>{selected.length}</strong> accounts selected for a
-          future route plan.
-        </p>
-
-        <p className="caption">
-          No swap or multi-account transaction signing is implemented
-          in this demonstration.
-        </p>
-      </section>
+      <ManagedAccounts
+        entries={entries}
+        selected={selected}
+        balances={balances}
+        client={client}
+        onSelectionChange={(id, checked) =>
+          setSelected((current) =>
+            checked
+              ? current.includes(id) ? current : [...current, id]
+              : current.filter((item) => item !== id),
+          )
+        }
+      />
     </main>
   );
 }
