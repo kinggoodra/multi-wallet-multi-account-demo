@@ -441,6 +441,9 @@ export default function WalletDashboard() {
             const connector = c as typeof c & ConnectorWithIcon;
             const isThisConnectorPending =
               pendingConnectorUid === c.uid;
+            const isConnected = connections.some(
+              (connection) => connection.connector.uid === c.uid,
+            );
 
             return (
               <div className="card connector-card" key={c.uid}>
@@ -449,17 +452,33 @@ export default function WalletDashboard() {
 
                   <div>
                     <strong>{c.name}</strong>
-                    <span className="caption">Wallet connector</span>
+                    <span className="caption">
+                      {isThisConnectorPending
+                        ? "Waiting for approval..."
+                        : isConnected
+                          ? "Connected"
+                          : "Not connected"}
+                    </span>
                   </div>
                 </div>
 
                 <div>
-                  <button
-                    disabled={!!pendingConnectorUid}
-                    onClick={() => handleConnect(c)}
-                  >
-                    {isThisConnectorPending ? "Waiting..." : "Connect"}
-                  </button>
+                  {isConnected ? (
+                    <button
+                      className="secondary-button"
+                      disabled={isThisConnectorPending || !!pendingConnectorUid}
+                      onClick={() => handleDisconnect(c)}
+                    >
+                      Disconnect
+                    </button>
+                  ) : (
+                    <button
+                      disabled={!!pendingConnectorUid}
+                      onClick={() => handleConnect(c)}
+                    >
+                      {isThisConnectorPending ? "Waiting..." : "Connect"}
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -482,42 +501,7 @@ export default function WalletDashboard() {
       </section>
 
       <section className="panel">
-        <h2>2. Connected wallets</h2>
-
-        {connections.length === 0 ? (
-          <p className="muted">No wallet connected yet.</p>
-        ) : (
-          connections.map((c) => (
-            <div className="card connector-card" key={c.connector.uid}>
-              <div className="connector-brand">
-                <ConnectorIcon
-                  connector={
-                    c.connector as typeof c.connector & ConnectorWithIcon
-                  }
-                />
-
-                <div>
-                  <strong>{c.connector.name}</strong>
-                  <span className="caption">
-                    Chain {c.chainId} • {c.accounts.length} account
-                    {c.accounts.length === 1 ? "" : "s"}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                disabled={pendingConnectorUid === c.connector.uid}
-                onClick={() => handleDisconnect(c.connector)}
-              >
-                Disconnect
-              </button>
-            </div>
-          ))
-        )}
-      </section>
-
-      <section className="panel">
-        <h2>3. Add another address under a wallet</h2>
+        <h2>2. Add another address (Watch only)</h2>
 
         <p className="caption">
           Adding an address does NOT authorize it to sign transactions.
@@ -555,7 +539,7 @@ export default function WalletDashboard() {
       </section>
 
       <section className="panel">
-        <h2>4. Managed accounts</h2>
+        <h2>3. Managed accounts</h2>
 
         {entries.length === 0 ? (
           <p className="muted">
