@@ -80,6 +80,7 @@ export default function WalletDashboard() {
   const [pendingConnectorName, setPendingConnectorName] = useState<
     string | null
   >(null);
+  const [cancelHelpShown, setCancelHelpShown] = useState(false);
 
   const connectionRequestId = useRef(0);
   const mountedRef = useRef(true);
@@ -179,6 +180,7 @@ export default function WalletDashboard() {
 
     setPendingConnectorUid(connector.uid);
     setPendingConnectorName(connector.name);
+    setCancelHelpShown(false);
     setConnectionStatus("connecting");
     setMessage(`Waiting for ${connector.name} wallet approval...`);
 
@@ -204,19 +206,19 @@ export default function WalletDashboard() {
         return;
       }
 
-      const message =
+      const errorMessage =
         connectError instanceof Error
           ? connectError.message
           : "Wallet connection was cancelled.";
 
       const rejected = /rejected|denied|cancelled|canceled|user/i.test(
-        message,
+        errorMessage,
       );
 
       setConnectionStatus(rejected ? "rejected" : "error");
       setMessage(
         rejected
-          ? `${connector.name} connection was cancelled.`
+          ? `${connector.name} connection was rejected or cancelled in the wallet.`
           : `Unable to connect ${connector.name}.`,
       );
     } finally {
@@ -226,6 +228,7 @@ export default function WalletDashboard() {
       ) {
         setPendingConnectorUid(null);
         setPendingConnectorName(null);
+        setCancelHelpShown(false);
       }
     }
   }
@@ -235,11 +238,14 @@ export default function WalletDashboard() {
       return;
     }
 
-    connectionRequestId.current += 1;
-    setPendingConnectorUid(null);
-    setPendingConnectorName(null);
-    setConnectionStatus("idle");
-    setMessage("Connection request cancelled in the demo.");
+    // EIP-1193 and Wagmi do not expose a standard API for a dapp to
+    // press Reject in a wallet extension's native approval popup.
+    // Keep the request pending until the wallet resolves it, so a late
+    // successful connection is not silently ignored by the UI.
+    setCancelHelpShown(true);
+    setMessage(
+      `To cancel this request, open ${pendingConnectorName ?? "your wallet"} and choose Reject. The wallet controls its own approval popup.`,
+    );
   }
 
   function handleDisconnect(connector: Connector) {
@@ -308,13 +314,19 @@ export default function WalletDashboard() {
               <span className="caption">
                 {pendingConnectorName} is waiting for your response.
               </span>
+              {cancelHelpShown && (
+                <span className="caption">
+                  Open the wallet popup and select Reject. This app cannot
+                  programmatically reject the wallet's native request.
+                </span>
+              )}
             </div>
 
             <button
               className="secondary-button"
               onClick={handleCancelConnection}
             >
-              Cancel
+              Cancel request
             </button>
           </div>
         )}
@@ -350,7 +362,9 @@ export default function WalletDashboard() {
         </div>
 
         {connectionStatus === "rejected" && (
-          <p className="warn">The wallet request was rejected or cancelled.</p>
+          <p className="warn">
+            The wallet request was rejected or cancelled.
+          </p>
         )}
 
         {connectionStatus === "error" && !pendingConnectorUid && (
@@ -469,7 +483,7 @@ export default function WalletDashboard() {
               <div className="address">{a.address}</div>
 
               <div className="caption">
-                Chain {a.chainId} • Native balance: {" "}
+                Chain {a.chainId} • Native balance:{" "}
                 {a.chainId === client?.chain.id
                   ? balances[a.id] ?? "Loading..."
                   : "Change read network"}
