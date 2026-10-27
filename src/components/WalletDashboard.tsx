@@ -13,7 +13,7 @@ import { isAddress, type Address } from "viem";
 import ConnectWalletExtensions from "./wallet/ConnectWalletExtensions";
 import AddWatchedAddress from "./wallet/AddWatchedAddress";
 import ManagedAccounts from "./wallet/ManagedAccounts";
-import type { WatchedAccount, ConnectorWithIcon, ConnectionStatus } from "./wallet/types";
+import type { WatchedAccount, ConnectionStatus } from "./wallet/types";
 
 export default function WalletDashboard() {
   const connectors = useConnectors();
