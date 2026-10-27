@@ -1,6 +1,10 @@
-import { useEffect, useState } from "react";
 import type { Connector, Connection } from "wagmi";
 import ConnectorIcon from "./ConnectorIcon";
+import {
+  metaMaskInstallUrl,
+  useWalletInstallation,
+  WalletInstallationAction,
+} from "./WalletInstallation";
 import type { ConnectorWithIcon } from "./types";
 
 type Props = {
@@ -21,35 +25,6 @@ type Props = {
   onCancelConnection: () => void;
 };
 
-const installUrls: Record<string, string> = {
-  metamask: "https://metamask.io/download/",
-  coinbase: "https://www.coinbase.com/wallet/downloads",
-  trust: "https://trustwallet.com/download",
-  rabby: "https://rabby.io/",
-};
-
-function getInstallUrl(connector: Connector) {
-  const name = connector.name.toLowerCase();
-
-  if (name.includes("metamask")) {
-    return installUrls.metamask;
-  }
-
-  if (name.includes("coinbase")) {
-    return installUrls.coinbase;
-  }
-
-  if (name.includes("trust")) {
-    return installUrls.trust;
-  }
-
-  if (name.includes("rabby")) {
-    return installUrls.rabby;
-  }
-
-  return null;
-}
-
 export default function ConnectWalletExtensions({
   connectors,
   connections,
@@ -62,38 +37,8 @@ export default function ConnectWalletExtensions({
   onDisconnect,
   onCancelConnection,
 }: Props) {
-  const [installed, setInstalled] = useState<Record<string, boolean>>({});
-  const [checkingInstallations, setCheckingInstallations] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function checkInstalledWallets() {
-      setCheckingInstallations(true);
-
-      const results = await Promise.all(
-        connectors.map(async (connector) => {
-          try {
-            await connector.getProvider();
-            return [connector.uid, true] as const;
-          } catch {
-            return [connector.uid, false] as const;
-          }
-        }),
-      );
-
-      if (!cancelled) {
-        setInstalled(Object.fromEntries(results));
-        setCheckingInstallations(false);
-      }
-    }
-
-    void checkInstalledWallets();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [connectors]);
+  const { installed, checkingInstallations } =
+    useWalletInstallation(connectors);
 
   return (
     <section className="panel">
@@ -135,7 +80,6 @@ export default function ConnectWalletExtensions({
             (connection) => connection.connector.uid === c.uid,
           );
           const isInstalled = installed[c.uid];
-          const installUrl = getInstallUrl(c);
 
           return (
             <div className="card connector-card" key={c.uid}>
@@ -169,26 +113,14 @@ export default function ConnectWalletExtensions({
                   >
                     Disconnect
                   </button>
-                ) : !checkingInstallations && !isInstalled && installUrl ? (
-                  <a
-                    className="button"
-                    href={installUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Install
-                  </a>
                 ) : (
-                  <button
-                    disabled={
-                      !!pendingConnectorUid ||
-                      checkingInstallations ||
-                      !isInstalled
-                    }
-                    onClick={() => onConnect(c)}
-                  >
-                    {isThisConnectorPending ? "Waiting..." : "Connect"}
-                  </button>
+                  <WalletInstallationAction
+                    connector={c}
+                    isInstalled={isInstalled}
+                    checkingInstallations={checkingInstallations}
+                    disabled={!!pendingConnectorUid}
+                    onConnect={() => onConnect(c)}
+                  />
                 )}
               </div>
             </div>
@@ -204,7 +136,7 @@ export default function ConnectWalletExtensions({
           </span>
           <a
             className="button"
-            href={installUrls.metamask}
+            href={metaMaskInstallUrl}
             target="_blank"
             rel="noreferrer"
           >
