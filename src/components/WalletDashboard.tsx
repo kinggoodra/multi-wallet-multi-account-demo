@@ -135,6 +135,46 @@ export default function WalletDashboard() {
     return [...map.values()];
   }, [watched, connections]);
 
+  // Re-check wallet permissions when the user returns to this tab.
+  // Some wallet extensions do not reliably emit a disconnect event when
+  // a site connection is revoked from the extension UI.
+  useEffect(() => {
+    let checking = false;
+
+    async function syncWalletConnections() {
+      if (checking || document.visibilityState === "hidden") {
+        return;
+      }
+
+      checking = true;
+
+      try {
+        for (const connection of connections) {
+          try {
+            const accounts = await connection.connector.getAccounts();
+
+            if (accounts.length === 0) {
+              disconnect({ connector: connection.connector });
+            }
+          } catch {
+            // A temporary provider error should not force a disconnect.
+          }
+        }
+      } finally {
+        checking = false;
+      }
+    }
+
+    window.addEventListener("focus", syncWalletConnections);
+    document.addEventListener("visibilitychange", syncWalletConnections);
+    void syncWalletConnections();
+
+    return () => {
+      window.removeEventListener("focus", syncWalletConnections);
+      document.removeEventListener("visibilitychange", syncWalletConnections);
+    };
+  }, [connections, disconnect]);
+
   useEffect(() => {
     if (!client) {
       return;
