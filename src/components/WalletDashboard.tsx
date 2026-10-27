@@ -135,11 +135,10 @@ export default function WalletDashboard() {
     return [...map.values()];
   }, [watched, connections]);
 
-  // Re-check wallet permissions when the user returns to this tab.
-  // Some wallet extensions do not reliably emit a disconnect event when
-  // a site connection is revoked from the extension UI.
+  // Synchronize wallet permissions with Connected wallets and Managed accounts.
   useEffect(() => {
     let checking = false;
+    let cancelled = false;
 
     async function syncWalletConnections() {
       if (checking || document.visibilityState === "hidden") {
@@ -153,8 +152,59 @@ export default function WalletDashboard() {
           try {
             const accounts = await connection.connector.getAccounts();
 
+            if (cancelled) {
+              return;
+            }
+
+            const liveAddresses = new Set(
+              accounts.map((account) => account.toLowerCase()),
+            );
+            const previouslyAuthorized = new Set(
+              connection.accounts.map((account) => account.toLowerCase()),
+            );
+
             if (accounts.length === 0) {
+              // The entire connector lost site authorization: remove its
+              // watched entries and checkbox selections as well.
+              setWatched((current) =>
+                current.filter(
+                  (account) => account.connectorUid !== connection.connector.uid,
+                ),
+              );
+              setSelected((current) =>
+                current.filter(
+                  (id) => !id.startsWith(connection.connector.uid + ":"),
+                ),
+              );
               disconnect({ connector: connection.connector });
+              continue;
+            }
+
+            // If only some authorized accounts were removed, remove those
+            // from Managed accounts but preserve still-authorized accounts.
+            const removedAddresses = new Set(
+              [...previouslyAuthorized].filter(
+                (account) => !liveAddresses.has(account),
+              ),
+            );
+
+            if (removedAddresses.size > 0) {
+              setWatched((current) =>
+                current.filter(
+                  (account) =>
+                    account.connectorUid !== connection.connector.uid ||
+                    !removedAddresses.has(account.address.toLowerCase()),
+                ),
+              );
+              setSelected((current) =>
+                current.filter((id) => {
+                  const [, , selectedAddress] = id.split(":");
+                  return (
+                    !id.startsWith(connection.connector.uid + ":") ||
+                    !removedAddresses.has(selectedAddress ?? "")
+                  );
+                }),
+              );
             }
           } catch {
             // A temporary provider error should not force a disconnect.
@@ -170,10 +220,17 @@ export default function WalletDashboard() {
     void syncWalletConnections();
 
     return () => {
+      cancelled = true;
       window.removeEventListener("focus", syncWalletConnections);
       document.removeEventListener("visibilitychange", syncWalletConnections);
     };
   }, [connections, disconnect]);
+
+  // Remove checkbox selections for accounts that are no longer listed.
+  useEffect(() => {
+    const availableIds = new Set(entries.map((account) => account.id));
+    setSelected((current) => current.filter((id) => availableIds.has(id)));
+  }, [entries]);
 
   useEffect(() => {
     if (!client) {
@@ -292,6 +349,14 @@ export default function WalletDashboard() {
     if (pendingConnectorUid === connector.uid) {
       return;
     }
+
+    // Disconnecting a wallet removes every account registered under it.
+    setWatched((current) =>
+      current.filter((account) => account.connectorUid !== connector.uid),
+    );
+    setSelected((current) =>
+      current.filter((id) => !id.startsWith(connector.uid + ":")),
+    );
 
     disconnect({
       connector,
