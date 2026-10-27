@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useConnect,
   useConnections,
   useConnectors,
   useDisconnect,
   usePublicClient,
+  type Connector,
 } from "wagmi";
 import { isAddress, type Address } from "viem";
 
@@ -22,6 +23,13 @@ type ConnectorWithIcon = {
   name: string;
   icon?: string;
 };
+
+type ConnectionStatus =
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "rejected"
+  | "error";
 
 function ConnectorIcon({
   connector,
@@ -54,7 +62,7 @@ function ConnectorIcon({
 export default function WalletDashboard() {
   const connectors = useConnectors();
   const connections = useConnections();
-  const { connect, isPending, error } = useConnect();
+  const { connectAsync, error } = useConnect();
   const { disconnect } = useDisconnect();
   const client = usePublicClient();
 
@@ -64,6 +72,24 @@ export default function WalletDashboard() {
   const [selected, setSelected] = useState<string[]>([]);
   const [balances, setBalances] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
+  const [connectionStatus, setConnectionStatus] =
+    useState<ConnectionStatus>("idle");
+  const [pendingConnectorUid, setPendingConnectorUid] = useState<
+    string | null
+  >(null);
+  const [pendingConnectorName, setPendingConnectorName] = useState<
+    string | null
+  >(null);
+
+  const connectionRequestId = useRef(0);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      connectionRequestId.current += 1;
+    };
+  }, []);
 
   const entries = useMemo(() => {
     const map = new Map<
@@ -108,8 +134,6 @@ export default function WalletDashboard() {
     return [...map.values()];
   }, [watched, connections]);
 
-  // Only look up balances for the public client network.
-  // No wallet authority is needed.
   useEffect(() => {
     if (!client) {
       return;
@@ -144,6 +168,89 @@ export default function WalletDashboard() {
       cancelled = true;
     };
   }, [client, entries]);
+
+  async function handleConnect(connector: Connector) {
+    if (pendingConnectorUid) {
+      return;
+    }
+
+    const requestId = connectionRequestId.current + 1;
+    connectionRequestId.current = requestId;
+
+    setPendingConnectorUid(connector.uid);
+    setPendingConnectorName(connector.name);
+    setConnectionStatus("connecting");
+    setMessage(`Waiting for ${connector.name} wallet approval...`);
+
+    try {
+      await connectAsync({
+        connector,
+      });
+
+      if (
+        !mountedRef.current ||
+        connectionRequestId.current !== requestId
+      ) {
+        return;
+      }
+
+      setConnectionStatus("connected");
+      setMessage(`${connector.name} connected successfully.`);
+    } catch (connectError) {
+      if (
+        !mountedRef.current ||
+        connectionRequestId.current !== requestId
+      ) {
+        return;
+      }
+
+      const message =
+        connectError instanceof Error
+          ? connectError.message
+          : "Wallet connection was cancelled.";
+
+      const rejected = /rejected|denied|cancelled|canceled|user/i.test(
+        message,
+      );
+
+      setConnectionStatus(rejected ? "rejected" : "error");
+      setMessage(
+        rejected
+          ? `${connector.name} connection was cancelled.`
+          : `Unable to connect ${connector.name}.`,
+      );
+    } finally {
+      if (
+        mountedRef.current &&
+        connectionRequestId.current === requestId
+      ) {
+        setPendingConnectorUid(null);
+        setPendingConnectorName(null);
+      }
+    }
+  }
+
+  function handleCancelConnection() {
+    if (!pendingConnectorUid) {
+      return;
+    }
+
+    connectionRequestId.current += 1;
+    setPendingConnectorUid(null);
+    setPendingConnectorName(null);
+    setConnectionStatus("idle");
+    setMessage("Connection request cancelled in the demo.");
+  }
+
+  function handleDisconnect(connector: Connector) {
+    if (pendingConnectorUid === connector.uid) {
+      return;
+    }
+
+    disconnect({
+      connector,
+    });
+  }
 
   function addWatch() {
     const connection = connections.find(
@@ -194,9 +301,29 @@ export default function WalletDashboard() {
       <section className="panel">
         <h2>1. Connect wallet extensions</h2>
 
+        {pendingConnectorUid && (
+          <div className="connection-status" role="status">
+            <div>
+              <strong>Waiting for wallet approval</strong>
+              <span className="caption">
+                {pendingConnectorName} is waiting for your response.
+              </span>
+            </div>
+
+            <button
+              className="secondary-button"
+              onClick={handleCancelConnection}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+
         <div className="cards">
           {connectors.map((c) => {
             const connector = c as typeof c & ConnectorWithIcon;
+            const isThisConnectorPending =
+              pendingConnectorUid === c.uid;
 
             return (
               <div className="card connector-card" key={c.uid}>
@@ -211,10 +338,10 @@ export default function WalletDashboard() {
 
                 <div>
                   <button
-                    disabled={isPending}
-                    onClick={() => connect({ connector: c })}
+                    disabled={!!pendingConnectorUid}
+                    onClick={() => handleConnect(c)}
                   >
-                    Connect
+                    {isThisConnectorPending ? "Waiting..." : "Connect"}
                   </button>
                 </div>
               </div>
@@ -222,7 +349,15 @@ export default function WalletDashboard() {
           })}
         </div>
 
-        {error && <p className="warn">{error.message}</p>}
+        {connectionStatus === "rejected" && (
+          <p className="warn">The wallet request was rejected or cancelled.</p>
+        )}
+
+        {connectionStatus === "error" && !pendingConnectorUid && (
+          <p className="warn">
+            {error?.message ?? "The wallet connection failed."}
+          </p>
+        )}
       </section>
 
       <section className="panel">
@@ -250,9 +385,8 @@ export default function WalletDashboard() {
               </div>
 
               <button
-                onClick={() =>
-                  disconnect({ connector: c.connector })
-                }
+                disabled={pendingConnectorUid === c.connector.uid}
+                onClick={() => handleDisconnect(c.connector)}
               >
                 Disconnect
               </button>
@@ -271,6 +405,7 @@ export default function WalletDashboard() {
         <select
           value={walletUid}
           onChange={(e) => setWalletUid(e.target.value)}
+          disabled={!!pendingConnectorUid}
         >
           <option value="">Choose a connected wallet</option>
 
@@ -285,9 +420,15 @@ export default function WalletDashboard() {
           value={address}
           onChange={(e) => setAddress(e.target.value)}
           placeholder="0x... public address"
+          disabled={!!pendingConnectorUid}
         />
 
-        <button onClick={addWatch}>Register address</button>
+        <button
+          onClick={addWatch}
+          disabled={!!pendingConnectorUid}
+        >
+          Register address
+        </button>
 
         <p role="status">{message}</p>
       </section>
