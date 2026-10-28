@@ -11,6 +11,10 @@ import {
 } from "wagmi";
 import { isAddress, type Address } from "viem";
 import ConnectWalletExtensions from "./wallet/ConnectWalletExtensions";
+import AnimatedList from "./ui/AnimatedList";
+import SlideCommit from "./ui/SlideCommit";
+import SwipeToast from "./ui/SwipeToast";
+import Drawer from "./ui/Drawer";
 import AddWatchedAddress from "./wallet/AddWatchedAddress";
 import ManagedAccounts from "./wallet/ManagedAccounts";
 import type { WatchedAccount, ConnectionStatus } from "./wallet/types";
@@ -37,6 +41,8 @@ export default function WalletDashboard() {
     string | null
   >(null);
   const [cancelHelpShown, setCancelHelpShown] = useState(false);
+  const [walletDrawerOpen, setWalletDrawerOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   const connectionRequestId = useRef(0);
   const mountedRef = useRef(true);
@@ -251,6 +257,8 @@ export default function WalletDashboard() {
 
       setConnectionStatus("connected");
       setMessage(`${connector.name} connected successfully.`);
+      setToastMessage(`${connector.name} connected successfully.`);
+      setWalletDrawerOpen(false);
     } catch (connectError) {
       if (
         !mountedRef.current ||
@@ -269,11 +277,11 @@ export default function WalletDashboard() {
       );
 
       setConnectionStatus(rejected ? "rejected" : "error");
-      setMessage(
-        rejected
-          ? `${connector.name} connection was rejected or cancelled in the wallet.`
-          : `Unable to connect ${connector.name}.`,
-      );
+      const failureMessage = rejected
+        ? `${connector.name} connection was rejected or cancelled in the wallet.`
+        : `Unable to connect ${connector.name}.`;
+      setMessage(failureMessage);
+      setToastMessage(failureMessage);
     } finally {
       if (
         mountedRef.current &&
@@ -356,27 +364,77 @@ export default function WalletDashboard() {
   }
 
   return (
-    <main>
-      <h1>Multi-Wallet + Multi-Account</h1>
+    <main className="mx-auto w-full max-w-6xl space-y-5 px-4 py-8 sm:px-6">
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">Wallet workspace</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Multi-Wallet + Multi-Account</h1>
+          <p className="mt-2 max-w-2xl text-sm text-zinc-500">
+            Connect EIP-6963 wallets, track multiple addresses, and review native balances. Signing stays restricted to wallet-authorized accounts.
+          </p>
+        </div>
+        <button type="button" className="button shrink-0" onClick={() => setWalletDrawerOpen(true)}>
+          Manage wallet connections ({connections.length})
+        </button>
+      </header>
 
-      <p className="muted">
-        Connect MetaMask, Trust Wallet, Rabby or other EIP-6963 wallets.
-        Track multiple addresses. Signing is restricted to the
-        extension-authorized account.
-      </p>
+      <section className="panel">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2>Connected wallets</h2>
+            <p className="caption">Select a wallet to review its connection state.</p>
+          </div>
+          <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium dark:bg-zinc-800">{connections.length} connected</span>
+        </div>
+        <AnimatedList
+          items={connectors.map((connector) => ({
+            id: connector.uid,
+            title: connector.name,
+            description: connections.some((connection) => connection.connector.uid === connector.uid) ? "Connected" : "Available wallet",
+            meta: connections.some((connection) => connection.connector.uid === connector.uid) ? "Online" : "Connect",
+          }))}
+          emptyLabel="No wallet connectors detected. Check your wallet extension and refresh."
+          onItemSelect={() => setWalletDrawerOpen(true)}
+        />
+      </section>
 
-      <ConnectWalletExtensions
-        connectors={connectors}
-        connections={connections}
-        pendingConnectorUid={pendingConnectorUid}
-        pendingConnectorName={pendingConnectorName}
-        cancelHelpShown={cancelHelpShown}
-        connectionStatus={connectionStatus}
-        errorMessage={error?.message}
-        onConnect={handleConnect}
-        onDisconnect={handleDisconnect}
-        onCancelConnection={handleCancelConnection}
-      />
+      <Drawer
+        open={walletDrawerOpen}
+        onOpenChange={setWalletDrawerOpen}
+        title="Wallet connections"
+        description="Connect or disconnect wallet extensions. Approval requests are controlled by your wallet."
+      >
+        <ConnectWalletExtensions
+          connectors={connectors}
+          connections={connections}
+          pendingConnectorUid={pendingConnectorUid}
+          pendingConnectorName={pendingConnectorName}
+          cancelHelpShown={cancelHelpShown}
+          connectionStatus={connectionStatus}
+          errorMessage={error?.message}
+          onConnect={handleConnect}
+          onDisconnect={handleDisconnect}
+          onCancelConnection={handleCancelConnection}
+        />
+        {connections.length > 0 && (
+          <section className="mt-5 space-y-3 rounded-xl border border-red-200 p-4 dark:border-red-900">
+            <div>
+              <h3 className="text-sm font-semibold">Disconnect all wallets</h3>
+              <p className="mt-1 text-xs text-zinc-500">This disconnects each currently connected wallet from this app. It does not transfer funds or revoke permissions inside the wallet.</p>
+            </div>
+            <SlideCommit
+              label="Slide to disconnect all"
+              doneLabel="Disconnected"
+              disabled={!!pendingConnectorUid}
+              onConfirm={() => {
+                for (const connection of connections) handleDisconnect(connection.connector);
+                setMessage("All wallet disconnect requests were sent.");
+                setToastMessage("All wallet disconnect requests were sent.");
+              }}
+            />
+          </section>
+        )}
+      </Drawer>
 
       <AddWatchedAddress
         connections={connections}
@@ -402,6 +460,14 @@ export default function WalletDashboard() {
           )
         }
       />
+      {toastMessage && (
+        <SwipeToast
+          title={/successfully|sent/.test(toastMessage) ? "Wallet update" : "Wallet notice"}
+          description={toastMessage}
+          tone={/successfully|sent/.test(toastMessage) ? "success" : "error"}
+          onClose={() => setToastMessage("")}
+        />
+      )}
     </main>
   );
 }
