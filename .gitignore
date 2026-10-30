@@ -3,3 +3,14 @@ node_modules
 .env
 .env.local
 *.tsbuildinfo
+.site_looks
+site_looks/
+.vscode/
+.vscode/mcp.json
+.wallet-watch-address-dashboard-preview.svg
+PORTFOLIO_OVERVIEW_LOGIC.md
+TOKEN_HOLDINGS_LOGIC.md
+wallet-watch-address-dashboard-preview.svg
+WATCH_ADDRESS_LOGIC.md
+
+TRANSACTION_HISTORY_LOGIC.md

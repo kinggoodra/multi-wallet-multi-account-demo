@@ -10,8 +10,8 @@ export default function ConnectorIcon({
   if (connector.icon) {
     return (
       <img
-        className="connector-icon"
         src={connector.icon}
+        className="connector-icon"
         alt=""
         aria-hidden="true"
       />
@@ -19,7 +19,7 @@ export default function ConnectorIcon({
   }
 
   return (
-    <span className="connector-icon connector-icon-fallback" aria-hidden="true">
+    <span className="connector-icon connector-fallback" aria-hidden="true">
       {fallback}
     </span>
   );

@@ -19,3 +19,12 @@ export type ConnectionStatus =
   | "connected"
   | "rejected"
   | "error";
+
+export type DashboardPage = "dashboard" | "watch" | "accounts";
+
+export type AccountCandidate = {
+  connectorUid: string;
+  wallet: string;
+  address: Address;
+  chainId: number;
+};

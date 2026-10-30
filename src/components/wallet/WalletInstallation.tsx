@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import type { Connector } from "wagmi";
-import SpecularButton from "../ui/SpecularButton";
 
 const installUrls: Record<string, string> = {
   metamask: "https://metamask.io/download/",
@@ -42,9 +41,9 @@ export function useWalletInstallation(connectors: readonly Connector[]) {
 export function WalletInstallationAction({ connector, isInstalled, checkingInstallations, disabled, onConnect }: { connector: Connector; isInstalled: boolean | undefined; checkingInstallations: boolean; disabled: boolean; onConnect: () => void }) {
   const installUrl = getInstallUrl(connector);
   if (!checkingInstallations && !isInstalled && installUrl) {
-    return <a className="button" href={installUrl} target="_blank" rel="noreferrer">Install</a>;
+    return <a className="wallet-action" href={installUrl} target="_blank" rel="noreferrer">Install</a>;
   }
-  return <SpecularButton size="sm" disabled={disabled || checkingInstallations || !isInstalled} onClick={onConnect}>Connect Wallet</SpecularButton>;
+  return <button className="wallet-action" disabled={disabled || checkingInstallations || !isInstalled} onClick={onConnect}>Connect Wallet</button>;
 }
 
 export const metaMaskInstallUrl = installUrls.metamask;
