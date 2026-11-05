@@ -8,9 +8,12 @@ site_looks/
 .vscode/
 .vscode/mcp.json
 .wallet-watch-address-dashboard-preview.svg
-PORTFOLIO_OVERVIEW_LOGIC.md
-TOKEN_HOLDINGS_LOGIC.md
+PORTFOLIO_OVERVIEW_.md
+TOKEN_HOLDINGS_.md
 wallet-watch-address-dashboard-preview.svg
-WATCH_ADDRESS_LOGIC.md
+WATCH_ADDRESS_.md
 
-TRANSACTION_HISTORY_LOGIC.md
+TRANSACTION_HISTORY_.md
+
+
+

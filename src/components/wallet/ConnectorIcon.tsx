@@ -11,7 +11,7 @@ export default function ConnectorIcon({
     return (
       <img
         src={connector.icon}
-        className="connector-icon"
+        className="size-[33px] flex-none rounded-[10px] bg-white/[.05] object-contain p-[5px]"
         alt=""
         aria-hidden="true"
       />
@@ -19,7 +19,7 @@ export default function ConnectorIcon({
   }
 
   return (
-    <span className="connector-icon connector-fallback" aria-hidden="true">
+    <span className="grid size-[33px] flex-none place-items-center rounded-[10px] bg-white/[.05] p-[5px] font-bold text-[#b5d76c]" aria-hidden="true">
       {fallback}
     </span>
   );
