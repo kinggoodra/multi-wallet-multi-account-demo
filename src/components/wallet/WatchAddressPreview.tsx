@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Copy, ExternalLink, RefreshCw, Search } from "lucide-react";
 import SpotlightCard from "../ui/SpotlightCard";
+import { TokenIcon } from "@web3icons/react/dynamic";
 
 const address = "0x71C79C5c6B4E7A0F3D2c8B1e5A6f9D4C2B9A2E";
 const assets = [
@@ -74,7 +75,7 @@ export default function WatchAddressPreview() {
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h3 className="m-0 text-sm font-semibold text-[#eef4ec]">Token holdings</h3><p className="mt-1 mb-0 text-[10px] text-[#87968b]">Search by token name, symbol, or network</p></div><span className="rounded-lg border border-[#2b4832] bg-[#081a10] px-2.5 py-1.5 text-[9px] text-[#aab7ad]">All networks</span></div>
         <label className="mb-4 flex h-10 max-w-sm items-center gap-2 rounded-lg border border-[#2b4832] bg-[#081a10] px-3 text-[#728178]"><Search size={14} /><input placeholder="Search token or symbol" className="min-w-0 flex-1 bg-transparent text-[10px] text-[#e1e9e1] outline-none placeholder:text-[#728178]" /></label>
         <div className="grid grid-cols-[1.3fr_1fr_1fr] border-b border-white/[.07] px-2 pb-2 text-[9px] font-semibold uppercase tracking-[.08em] text-[#718178]"><span>Asset</span><span>Balance</span><span className="text-right">Price</span></div>
-        <div className="max-h-[340px] overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{assets.map((asset) => <div key={asset.symbol} className="grid grid-cols-[1.3fr_1fr_1fr] items-center border-b border-white/[.05] px-2 py-3 last:border-0"><div className="flex min-w-0 items-center gap-2.5"><span className="grid size-8 flex-none place-items-center rounded-full bg-white/[.06] text-[10px] font-bold" style={{ color: asset.color }}>{asset.symbol.slice(0, 1)}</span><span className="min-w-0"><strong className="block text-[10px] text-[#e1e9e1]">{asset.name}</strong><small className="text-[9px] text-[#7f9085]">{asset.symbol}</small></span></div><span className="text-[10px] text-[#c9d6ca]">{asset.amount}</span><span className="text-right text-[10px] font-medium text-[#e1e9e1]">{asset.price}</span></div>)}</div>
+        <div className="max-h-[340px] overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">{assets.map((asset) => <div key={asset.symbol} className="grid grid-cols-[1.3fr_1fr_1fr] items-center border-b border-white/[.05] px-2 py-3 last:border-0"><div className="flex min-w-0 items-center gap-2.5"><span className="grid size-8 flex-none place-items-center rounded-full bg-white/[.06]"><TokenIcon symbol={asset.symbol} size={32} variant="branded" /></span><span className="min-w-0"><strong className="block text-[10px] text-[#e1e9e1]">{asset.name}</strong><small className="text-[9px] text-[#7f9085]">{asset.symbol}</small></span></div><span className="text-[10px] text-[#c9d6ca]">{asset.amount}</span><span className="text-right text-[10px] font-medium text-[#e1e9e1]">{asset.price}</span></div>)}</div>
       </SpotlightCard>
 
       <SpotlightCard className="overflow-hidden bg-[linear-gradient(135deg,#10351f,#0d2c1a)] p-5 max-[680px]:p-4">
