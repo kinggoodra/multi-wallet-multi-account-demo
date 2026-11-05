@@ -1,6 +1,7 @@
 "use client";
 
-import { Copy, ExternalLink, RefreshCw, Search } from "lucide-react";
+import { useState } from "react";
+import { Check, Copy, ExternalLink, RefreshCw, Search } from "lucide-react";
 import SpotlightCard from "../ui/SpotlightCard";
 
 const address = "0x71C79C5c6B4E7A0F3D2c8B1e5A6f9D4C2B9A2E";
@@ -23,6 +24,18 @@ const activity = [
 ];
 
 export default function WatchAddressPreview() {
+  const [copied, setCopied] = useState(false);
+
+  async function copyAddress() {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+    }
+  }
+
   return (
     <section aria-label="Watch address dashboard preview" className="mt-8 space-y-5 pb-8 max-[680px]:mt-6">
       <SpotlightCard className="flex flex-wrap items-center justify-between gap-4 bg-[linear-gradient(105deg,#10351f,#0d2c1a)] p-5 max-[680px]:p-4">
@@ -31,7 +44,20 @@ export default function WatchAddressPreview() {
           <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h2 className="m-0 text-sm font-semibold text-[#eef4ec]">Research Wallet</h2><span className="rounded-full bg-white/[.06] px-2.5 py-1 text-[8px] font-bold tracking-[.06em] text-[#aab7ad]">WATCH ONLY</span></div><p className="mt-1 mb-0 break-all font-mono text-[10px] text-[#92a096]">{address}</p><p className="mt-1 mb-0 text-[9px] text-[#6f8075]">Watching 2 configured networks · Preview data</p></div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#425a43] bg-[#0b2416] px-3 text-[9px] text-[#c5d1c7] hover:border-[#718c45]"><Copy size={13} className="text-[#9bb756]" />Copy</button>
+          <button
+            type="button"
+            onClick={() => void copyAddress()}
+            aria-label={copied ? "Address copied" : "Copy address"}
+            title={copied ? "Copied" : "Copy"}
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#425a43] bg-[#0b2416] px-3 text-[9px] text-[#c5d1c7] hover:border-[#718c45]"
+          >
+            {copied ? (
+              <Check size={13} className="text-[#9bb756]" />
+            ) : (
+              <Copy size={13} className="text-[#9bb756]" />
+            )}
+            {copied ? "Copied" : "Copy"}
+          </button>
           <button type="button" className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#425a43] bg-[#0b2416] px-3 text-[9px] text-[#c5d1c7] hover:border-[#718c45]"><ExternalLink size={13} className="text-[#9bb756]" />Explorer</button>
           <button type="button" className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#425a43] bg-[#0b2416] px-3 text-[9px] text-[#c5d1c7] hover:border-[#718c45]"><RefreshCw size={13} className="text-[#9bb756]" />Refresh</button>
         </div>
