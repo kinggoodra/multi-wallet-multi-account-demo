@@ -19,6 +19,9 @@ type DashboardStateValue = {
   removeWatchedForConnector: (connectorUid: string) => void;
   selected: string[];
   setSelected: Dispatch<SetStateAction<string[]>>;
+  selectedNetworkIds: number[];
+  setSelectedNetworks: Dispatch<SetStateAction<{ M_chainids: number[]; T_chainids: number[] }>>;
+  selectedNetworks: { M_chainids: number[]; T_chainids: number[] };
 };
 
 const DashboardStateContext = createContext<DashboardStateValue | null>(null);
@@ -27,6 +30,8 @@ const STORAGE_KEY = "avaritia.watchedAccounts";
 export function DashboardStateProvider({ children }: { children: ReactNode }) {
   const [watched, setWatched] = useState<WatchedAccount[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
+  const [selectedNetworks, setSelectedNetworks] = useState<{ M_chainids: number[]; T_chainids: number[] }>({ M_chainids: [], T_chainids: [] });
+  const selectedNetworkIds = [...selectedNetworks.M_chainids, ...selectedNetworks.T_chainids];
   const [storageReady, setStorageReady] = useState(false);
 
   useEffect(() => {
@@ -79,8 +84,11 @@ export function DashboardStateProvider({ children }: { children: ReactNode }) {
       removeWatchedForConnector,
       selected,
       setSelected,
+      selectedNetworkIds,
+      selectedNetworks,
+      setSelectedNetworks,
     }),
-    [watched, addWatched, removeWatchedForConnector, selected],
+    [watched, addWatched, removeWatchedForConnector, selected, selectedNetworkIds, selectedNetworks],
   );
 
   return (

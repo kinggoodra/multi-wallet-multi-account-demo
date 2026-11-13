@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useConnectors } from "wagmi";
 import { isAddress } from "viem";
 import { useDashboardState } from "./DashboardState";
@@ -10,7 +10,7 @@ import useWalletConnectionActions from "./useWalletConnectionActions";
 export default function useWalletDashboard() {
   const connectors = useConnectors();
   const accounts = useWalletAccountData();
-  const { addWatched } = useDashboardState();
+  const { addWatched, selectedNetworks } = useDashboardState();
   const [walletUid, setWalletUid] = useState("");
   const [address, setAddress] = useState("");
   const [message, setMessage] = useState("");
@@ -22,6 +22,14 @@ export default function useWalletDashboard() {
     );
     if (!connection) {
       setMessage("First connect the wallet extension.");
+      return;
+    }
+    if (selectedNetworks.M_chainids.length + selectedNetworks.T_chainids.length === 0) {
+      setMessage("Choose at least one network and click Done first.");
+      return;
+    }
+    if (!connection.accounts.some((account) => account.toLowerCase() === address.toLowerCase())) {
+      setMessage("Choose an address authorized during this wallet connection.");
       return;
     }
     if (!isAddress(address)) {
@@ -39,6 +47,13 @@ export default function useWalletDashboard() {
     setMessage("Account registered for watch-only monitoring.");
   }
 
+  const onWalletChange = useCallback((uid: string) => {
+    setWalletUid(uid);
+    const connection = accounts.connections.find((item) => item.connector.uid === uid);
+    setAddress(connection?.accounts[0] ?? "");
+    setMessage("");
+  }, [accounts.connections]);
+
   return {
     connectors,
     ...accounts,
@@ -46,7 +61,8 @@ export default function useWalletDashboard() {
     walletUid,
     address,
     message,
-    onWalletChange: setWalletUid,
+    selectedNetworks,
+    onWalletChange,
     onAddressChange: setAddress,
     onAddWatch,
   };
