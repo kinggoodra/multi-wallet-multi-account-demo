@@ -17,6 +17,7 @@ export default function useWalletConnectionActions(
   const { removeWatchedForConnector, setSelected } = useDashboardState();
   const [connectionStatus, setConnectionStatus] =
     useState<ConnectionStatus>("idle");
+  const [connectionError, setConnectionError] = useState<string | undefined>();
   const [pendingConnectorUid, setPendingConnectorUid] = useState<string | null>(
     null,
   );
@@ -41,6 +42,7 @@ export default function useWalletConnectionActions(
     setPendingConnectorUid(connector.uid);
     setPendingConnectorName(connector.name);
     setCancelHelpShown(false);
+    setConnectionError(undefined);
     setConnectionStatus("connecting");
     setMessage(`Waiting for ${connector.name} wallet approval...`);
 
@@ -48,6 +50,7 @@ export default function useWalletConnectionActions(
       await connectAsync({ connector });
       if (!mounted.current || requestId.current !== currentRequest) return;
       setConnectionStatus("connected");
+      setConnectionError(undefined);
       setMessage(`${connector.name} connected successfully.`);
     } catch (connectError) {
       if (!mounted.current || requestId.current !== currentRequest) return;
@@ -56,11 +59,20 @@ export default function useWalletConnectionActions(
           ? connectError.message
           : "Wallet connection was cancelled.";
       const rejected = /rejected|denied|cancelled|canceled|user/i.test(message);
+      const extensionConnectionFailure =
+        /failed to connect to metamask|extension context invalidated/i.test(message);
       setConnectionStatus(rejected ? "rejected" : "error");
+      setConnectionError(
+        extensionConnectionFailure
+          ? "MetaMask’s browser extension failed to establish the connection. Reload this page and retry. If another browser wallet extension is active, temporarily disable it and try again."
+          : message,
+      );
       setMessage(
         rejected
           ? `${connector.name} connection was rejected or cancelled in the wallet.`
-          : `Unable to connect ${connector.name}.`,
+          : extensionConnectionFailure
+            ? "MetaMask could not establish the connection. Reload the page and retry."
+            : `Unable to connect ${connector.name}.`,
       );
     } finally {
       if (mounted.current && requestId.current === currentRequest) {
@@ -90,7 +102,7 @@ export default function useWalletConnectionActions(
 
   return {
     connectionStatus,
-    errorMessage: error?.message,
+    errorMessage: connectionError ?? error?.message,
     pendingConnectorUid,
     pendingConnectorName,
     cancelHelpShown,
