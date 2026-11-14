@@ -1,13 +1,13 @@
 import type { PublicClient } from "viem";
 import type { Connection, Connector } from "wagmi";
 import { Plus } from "lucide-react";
-import type { AccountCandidate, DashboardPage } from "./wallet/types";
-import ConnectWalletExtensions from "./wallet/ConnectWalletExtensions";
-import AddWatchedAddress from "./wallet/AddWatchedAddress";
-import ManagedAccounts from "./wallet/ManagedAccounts";
-import SpotlightCard from "./ui/SpotlightCard";
-import type { ConnectionStatus } from "./wallet/types";
-import WatchAddressPreview from "./wallet/WatchAddressPreview";
+import type { AccountCandidate, DashboardPage } from "@/features/wallet/types/wallet.types";
+import ConnectWalletExtensions from "@/features/wallet/components/ConnectWalletExtensions";
+import AddWatchedAddress from "@/features/wallet/components/AddWatchedAddress";
+import ManagedAccounts from "@/features/wallet/components/ManagedAccounts";
+import SpotlightCard from "@/components/ui/SpotlightCard";
+import type { ConnectionStatus } from "@/features/wallet/types/wallet.types";
+import WatchAddressPreview from "@/features/wallet/components/WatchAddressPreview";
 
 type Props = {
   page: DashboardPage;

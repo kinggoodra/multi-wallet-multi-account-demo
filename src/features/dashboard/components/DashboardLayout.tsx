@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 import { Eye, Users, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useConnections } from "wagmi";
-import Dock from "./ui/Dock";
-import type { DashboardPage } from "./wallet/types";
-import AddNetworks from "./wallet/select_networks";
-import { useDashboardState } from "./wallet/DashboardState";
+import Dock from "@/components/ui/Dock";
+import type { DashboardPage } from "@/features/wallet/types/wallet.types";
+import AddNetworks from "@/features/wallet/components/select_networks";
+import { useDashboardState } from "@/features/wallet/state/DashboardState";
 
 type Props = {
   page: DashboardPage;

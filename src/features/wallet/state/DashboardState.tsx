@@ -11,7 +11,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from "react";
-import type { WatchedAccount } from "./types";
+import type { WatchedAccount } from "../types/wallet.types";
 
 type DashboardStateValue = {
   watched: WatchedAccount[];

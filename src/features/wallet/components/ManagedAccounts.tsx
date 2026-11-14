@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import type { PublicClient } from "viem";
 import type { Address } from "viem";
-import AnimatedList from "../ui/AnimatedList";
+import AnimatedList from "@/components/ui/AnimatedList";
 
 export type ManagedAccountEntry = {
   id: string;

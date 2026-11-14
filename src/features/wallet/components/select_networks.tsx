@@ -5,8 +5,8 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { NetworkIcon } from "@web3icons/react/dynamic";
 import { ChevronDown, Plus, Trash2, X } from "lucide-react";
 import axios from "axios";
-import { useDashboardState } from "./DashboardState";
-import { networkCatalog, type NetworkGroup, type NetworkOption } from "./networkCatalog";
+import { useDashboardState } from "../state/DashboardState";
+import { networkCatalog, type NetworkGroup, type NetworkOption } from "../constants/networkCatalog";
 
 export default function AddNetworks() {
   const [group, setGroup] = useState<NetworkGroup>("Mainnet");

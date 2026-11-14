@@ -1,7 +1,7 @@
 import type { Connector, Connection } from "wagmi";
 import ConnectorIcon from "./ConnectorIcon";
 import { metaMaskInstallUrl, useWalletInstallation, WalletInstallationAction } from "./WalletInstallation";
-import type { ConnectorWithIcon } from "./types";
+import type { ConnectorWithIcon } from "../types/wallet.types";
 
 type Props = {
   connectors: readonly Connector[];

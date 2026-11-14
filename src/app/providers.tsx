@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider } from "wagmi";
 import { config } from "@/lib/wagmi";
-import { DashboardStateProvider } from "@/components/wallet/DashboardState";
+import { DashboardStateProvider } from "@/features/wallet/state/DashboardState";
 
 export default function Providers({
   children,

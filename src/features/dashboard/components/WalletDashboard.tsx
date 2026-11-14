@@ -2,8 +2,8 @@
 
 import DashboardLayout from "./DashboardLayout";
 import DashboardPageSections from "./DashboardPageSections";
-import useWalletDashboard from "./wallet/useWalletDashboard";
-import type { DashboardPage } from "./wallet/types";
+import useWalletDashboard from "@/features/wallet/hooks/useWalletDashboard";
+import type { DashboardPage } from "@/features/wallet/types/wallet.types";
 
 export default function WalletDashboard({
   page = "dashboard",

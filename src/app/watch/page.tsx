@@ -1,4 +1,4 @@
-import WalletDashboard from "@/components/WalletDashboard";
+import WalletDashboard from "@/features/dashboard/components/WalletDashboard";
 
 export default function WatchPage() {
   return <WalletDashboard page="watch" />;

@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useConnectors } from "wagmi";
 import { isAddress } from "viem";
-import { useDashboardState } from "./DashboardState";
+import { useDashboardState } from "../state/DashboardState";
 import useWalletAccountData from "./useWalletAccountData";
 import useWalletConnectionActions from "./useWalletConnectionActions";
 

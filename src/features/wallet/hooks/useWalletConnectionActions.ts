@@ -6,8 +6,8 @@ import {
   useDisconnect,
   type Connector,
 } from "wagmi";
-import { useDashboardState } from "./DashboardState";
-import type { ConnectionStatus } from "./types";
+import { useDashboardState } from "../state/DashboardState";
+import type { ConnectionStatus } from "../types/wallet.types";
 
 export default function useWalletConnectionActions(
   setMessage: Dispatch<SetStateAction<string>>,

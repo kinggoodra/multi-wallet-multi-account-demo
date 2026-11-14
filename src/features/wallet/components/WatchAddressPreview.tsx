@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { Check, Copy, ExternalLink, RefreshCw, Search } from "lucide-react";
-import SpotlightCard from "../ui/SpotlightCard";
+import SpotlightCard from "@/components/ui/SpotlightCard";
 import { NetworkIcon, TokenIcon } from "@web3icons/react/dynamic";
-import { networkCatalog, type NetworkGroup } from "./networkCatalog";
+import { networkCatalog, type NetworkGroup } from "../constants/networkCatalog";
 
 const address = "0x71C79C5c6B4E7A0F3D2c8B1e5A6f9D4C2B9A2E";
 const assets = [

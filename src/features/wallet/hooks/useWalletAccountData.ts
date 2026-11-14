@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAccount, useConnections, useDisconnect, usePublicClient } from "wagmi";
-import { useDashboardState } from "./DashboardState";
-import type { AccountCandidate } from "./types";
+import { useDashboardState } from "../state/DashboardState";
+import type { AccountCandidate } from "../types/wallet.types";
 
 export default function useWalletAccountData() {
   const connections = useConnections();
