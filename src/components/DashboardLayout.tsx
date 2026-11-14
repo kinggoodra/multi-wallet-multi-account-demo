@@ -29,7 +29,7 @@ const pageDescriptions: Record<DashboardPage, string> = {
 
 export default function DashboardLayout({ page, children }: Props) {
   const connections = useConnections();
-  const { selectedNetworkIds } = useDashboardState();
+  const { selectedNetworkIds, setNetworkSelectorOpen } = useDashboardState();
   const missingWallet = connections.length === 0;
   const missingNetwork = selectedNetworkIds.length === 0;
   return (
@@ -108,7 +108,10 @@ export default function DashboardLayout({ page, children }: Props) {
             <p className="mb-0 mt-2 text-xs leading-6 text-[#9eaea3]">
               {missingWallet && "Connect a wallet"}{missingWallet && missingNetwork && " and "}{missingNetwork && "choose at least one network"} to continue.
             </p>
-            <Link href="/" className="mt-4 inline-flex rounded-lg bg-[#b5d76c] px-4 py-2 text-xs font-bold text-[#14200d]">Connect wallet</Link>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {missingWallet && <Link href="/" className="inline-flex rounded-lg bg-[#b5d76c] px-4 py-2 text-xs font-bold text-[#14200d]">Connect wallet</Link>}
+              {missingNetwork && <button type="button" onClick={() => setNetworkSelectorOpen(true)} className="inline-flex rounded-lg bg-[#b5d76c] px-4 py-2 text-xs font-bold text-[#14200d]">Networks</button>}
+            </div>
           </section>
         ) : children}
         <footer className="flex justify-between gap-[15px] pt-5 text-[9px] text-[#64746a] max-[680px]:text-[8px]">

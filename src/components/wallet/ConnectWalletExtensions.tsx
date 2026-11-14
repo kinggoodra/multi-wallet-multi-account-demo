@@ -18,7 +18,7 @@ type Props = {
 
 export default function ConnectWalletExtensions({ connectors, connections, pendingConnectorUid, pendingConnectorName, cancelHelpShown, connectionStatus, errorMessage, onConnect, onDisconnect, onCancelConnection }: Props) {
   const { installed, checkingInstallations } = useWalletInstallation(connectors);
-  const showToast = connectionStatus === "connected" || connectionStatus === "rejected" || connectionStatus === "error";
+  const showToast = connectionStatus === "rejected" || connectionStatus === "error";
 
   return (
     <section>
@@ -42,7 +42,7 @@ export default function ConnectWalletExtensions({ connectors, connections, pendi
 
       {connectors.length === 0 && <div role="status" className="rounded-[10px] border border-[#536839] bg-[#132a18] px-3 py-[10px] text-[11px] text-[#cfdbc8]"><strong>No wallet connector detected</strong><p className="mt-1 text-[#9eaea3]">Install a compatible wallet extension and refresh the page.</p><a className="text-[#b5d76c] underline" href={metaMaskInstallUrl} target="_blank" rel="noreferrer">Install MetaMask</a></div>}
 
-      {showToast && <p role="status" className="mb-[10px] rounded-[10px] border border-[#536839] bg-[#132a18] px-3 py-[10px] text-[11px] text-[#cfdbc8] max-[680px]:text-[10px]">{connectionStatus === "connected" ? "Wallet connected. Your wallet was connected successfully." : `Wallet connection failed. ${errorMessage ?? "The wallet request was rejected or cancelled."}`}</p>}
+      {showToast && <p role="status" className="mb-[10px] rounded-[10px] border border-[#536839] bg-[#132a18] px-3 py-[10px] text-[11px] leading-5 text-[#cfdbc8] max-[680px]:text-[10px]">{`Wallet connection failed. ${errorMessage ?? "The wallet request was rejected or cancelled."}`}</p>}
     </section>
   );
 }

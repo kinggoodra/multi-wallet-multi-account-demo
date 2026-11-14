@@ -4,27 +4,14 @@ import { useEffect, useState, type FormEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { NetworkIcon } from "@web3icons/react/dynamic";
 import { ChevronDown, Plus, Trash2, X } from "lucide-react";
+import axios from "axios";
 import { useDashboardState } from "./DashboardState";
-
-type NetworkGroup = "Mainnet" | "Testnet";
-type Network = { id: number; name: string; symbol: string; group: NetworkGroup };
-
-const initialNetworks: Network[] = [
-  { id: 1, name: "Ethereum", symbol: "ETH", group: "Mainnet" },
-  { id: 8453, name: "Base", symbol: "ETH", group: "Mainnet" },
-  { id: 42161, name: "Arbitrum One", symbol: "ETH", group: "Mainnet" },
-  { id: 10, name: "Optimism", symbol: "ETH", group: "Mainnet" },
-  { id: 137, name: "Polygon", symbol: "POL", group: "Mainnet" },
-  { id: 43114, name: "Avalanche", symbol: "AVAX", group: "Mainnet" },
-  { id: 11155111, name: "Sepolia", symbol: "SepoliaETH", group: "Testnet" },
-  { id: 84532, name: "Base Sepolia", symbol: "ETH", group: "Testnet" },
-];
+import { networkCatalog, type NetworkGroup, type NetworkOption } from "./networkCatalog";
 
 export default function AddNetworks() {
-  const [open, setOpen] = useState(false);
   const [group, setGroup] = useState<NetworkGroup>("Mainnet");
-  const [networks, setNetworks] = useState(initialNetworks);
-  const { selectedNetworks, setSelectedNetworks } = useDashboardState();
+  const [networks, setNetworks] = useState<NetworkOption[]>(networkCatalog);
+  const { selectedNetworks, setSelectedNetworks, networkSelectorOpen: open, setNetworkSelectorOpen: setOpen } = useDashboardState();
   const [selectedIds, setSelectedIds] = useState<number[]>(() => [
     ...selectedNetworks.M_chainids,
     ...selectedNetworks.T_chainids,
@@ -35,6 +22,8 @@ export default function AddNetworks() {
   const [symbol, setSymbol] = useState("");
   const [newGroup, setNewGroup] = useState<NetworkGroup>("Mainnet");
   const [error, setError] = useState("");
+  const [requestError, setRequestError] = useState("");
+  const [saving, setSaving] = useState(false);
   const reducedMotion = useReducedMotion();
 
   const visibleNetworks = [...networks]
@@ -83,16 +72,35 @@ export default function AddNetworks() {
     setSelectedIds((current) => current.filter((selectedId) => selectedId !== id));
   }
 
-  function finishSelection() {
-    setSelectedNetworks({
+  async function finishSelection() {
+    if (saving) return;
+    const selection = {
       M_chainids: networks
         .filter((network) => network.group === "Mainnet" && selectedIds.includes(network.id))
         .map((network) => network.id),
       T_chainids: networks
         .filter((network) => network.group === "Testnet" && selectedIds.includes(network.id))
         .map((network) => network.id),
-    });
-    setOpen(false);
+    };
+
+    setSaving(true);
+    setRequestError("");
+    try {
+      await Promise.all([
+        axios.post("http://localhost:5000/api/mainnet", {
+          chain_ids: selection.M_chainids,
+        }),
+        axios.post("http://localhost:5000/api/testent", {
+          chain_ids: selection.T_chainids,
+        }),
+      ]);
+      setSelectedNetworks(selection);
+      setOpen(false);
+    } catch {
+      setRequestError("Unable to save network selection. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -150,9 +158,6 @@ export default function AddNetworks() {
                   <h3 className="m-0 text-sm font-semibold text-[#eef4ec]">Choose networks</h3>
                   <span className="text-[10px] text-[#748478]">{selectedIds.length} enabled</span>
                 </div>
-                <p className="mb-3 mt-0 break-all rounded-lg border border-[#263d2d] bg-[#08170f] px-3 py-2 font-mono text-[9px] text-[#9eaea3]" aria-live="polite">
-                  {JSON.stringify(selectedNetworks)}
-                </p>
                 <div role="tablist" aria-label="Network group" className="flex rounded-xl border border-[#2c4634] bg-[#08170f] p-1.5">
                   {(["Mainnet", "Testnet"] as const).map((item) => (
                     <button key={item} type="button" role="tab" aria-selected={group === item} onClick={() => setGroup(item)} className={`h-10 flex-1 rounded-lg text-[12px] font-semibold transition-colors ${group === item ? "bg-[#b5d76c] text-[#14200d]" : "text-[#87978b] hover:text-[#e4ece4]"}`}>
@@ -182,7 +187,7 @@ export default function AddNetworks() {
               <ul className="m-0 min-h-0 flex-1 list-none space-y-2 overflow-y-auto px-6 pb-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {visibleNetworks.map((network) => {
                   const selected = selectedIds.includes(network.id);
-                  const builtIn = initialNetworks.some((item) => item.id === network.id);
+      const builtIn = networkCatalog.some((item) => item.id === network.id);
                   return (
                     <li key={network.id} className="flex items-center gap-3 rounded-xl border border-[#263d2d] bg-[#0b2014] px-3 py-3">
                       <span className="grid size-[34px] flex-none place-items-center rounded-full border border-[#2d4532] bg-[#091a10]">
@@ -205,8 +210,11 @@ export default function AddNetworks() {
               </ul>
 
               <footer className="flex shrink-0 items-center justify-between gap-4 border-t border-[#223a29] px-6 py-4">
-                <p className="m-0 text-[9px] text-[#718176]">All networks start off. Enabled networks appear first.</p>
-                <button type="button" onClick={finishSelection} className="h-9 rounded-lg bg-[#b5d76c] px-5 text-[11px] font-bold text-[#14200d] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d7f59b]">Done</button>
+                <div className="min-w-0">
+                  <p className="m-0 text-[9px] text-[#718176]">All networks start off. Enabled networks appear first.</p>
+                  {requestError && <p role="alert" className="mb-0 mt-1 text-[9px] text-[#ff9b8f]">{requestError}</p>}
+                </div>
+                <button type="button" onClick={() => void finishSelection()} disabled={saving} className="h-9 shrink-0 rounded-lg bg-[#b5d76c] px-5 text-[11px] font-bold text-[#14200d] transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d7f59b] disabled:cursor-wait disabled:opacity-60">{saving ? "Saving…" : "Done"}</button>
               </footer>
             </motion.aside>
           </motion.div>

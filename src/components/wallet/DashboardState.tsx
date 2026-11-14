@@ -22,6 +22,8 @@ type DashboardStateValue = {
   selectedNetworkIds: number[];
   setSelectedNetworks: Dispatch<SetStateAction<{ M_chainids: number[]; T_chainids: number[] }>>;
   selectedNetworks: { M_chainids: number[]; T_chainids: number[] };
+  networkSelectorOpen: boolean;
+  setNetworkSelectorOpen: Dispatch<SetStateAction<boolean>>;
 };
 
 const DashboardStateContext = createContext<DashboardStateValue | null>(null);
@@ -31,6 +33,7 @@ export function DashboardStateProvider({ children }: { children: ReactNode }) {
   const [watched, setWatched] = useState<WatchedAccount[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [selectedNetworks, setSelectedNetworks] = useState<{ M_chainids: number[]; T_chainids: number[] }>({ M_chainids: [], T_chainids: [] });
+  const [networkSelectorOpen, setNetworkSelectorOpen] = useState(false);
   const selectedNetworkIds = [...selectedNetworks.M_chainids, ...selectedNetworks.T_chainids];
   const [storageReady, setStorageReady] = useState(false);
 
@@ -87,8 +90,10 @@ export function DashboardStateProvider({ children }: { children: ReactNode }) {
       selectedNetworkIds,
       selectedNetworks,
       setSelectedNetworks,
+      networkSelectorOpen,
+      setNetworkSelectorOpen,
     }),
-    [watched, addWatched, removeWatchedForConnector, selected, selectedNetworkIds, selectedNetworks],
+    [watched, addWatched, removeWatchedForConnector, selected, selectedNetworkIds, selectedNetworks, networkSelectorOpen],
   );
 
   return (
