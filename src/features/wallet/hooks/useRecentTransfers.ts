@@ -8,13 +8,13 @@ import {
   type TransactionHistoryItem,
 } from "../services/erc20Transfers";
 
-export default function useRecentTransfers(walletAddress: string, chainId?: number) {
+export default function useRecentTransfers(walletAddress: string, chainId: number) {
   const [transactions, setTransactions] = useState<TransactionHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!walletAddress || !chainId) {
+    if (!walletAddress) {
       setTransactions([]);
       setError("");
       return;

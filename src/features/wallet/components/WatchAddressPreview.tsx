@@ -10,14 +10,12 @@ import TransactionHistory from "./TransactionHistory";
 
 const unitUsdQuotes: Record<string, number> = { ETH: 2525, WETH: 2525, USDC: 1, ARB: 0.72, OP: 1.85, POL: 0.38, AVAX: 36.2 };
 export default function WatchAddressPreview() {
-  const { tokenBalances, watched } = useDashboardState();
+  const { tokenBalances } = useDashboardState();
   const historyAddress = tokenBalances?.walletAddress ?? "";
-  const historyChainId = watched.find((account) => account.address.toLowerCase() === historyAddress.toLowerCase())?.chainId
-    ?? tokenBalances?.mainnet[0]?.chainId
-    ?? tokenBalances?.testnet[0]?.chainId;
   const [copied, setCopied] = useState(false);
   const [networkGroup, setNetworkGroup] = useState<"All tokens" | NetworkGroup>("All tokens");
   const [networkFilter, setNetworkFilter] = useState("all");
+  const historyChainId = networkFilter === "all" ? 1 : Number(networkFilter);
   const [networkMenuOpen, setNetworkMenuOpen] = useState(false);
   const [tokenSearch, setTokenSearch] = useState("");
   const availableNetworks = networkGroup === "All tokens"

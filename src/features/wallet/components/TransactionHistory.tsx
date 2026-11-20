@@ -2,7 +2,7 @@
 
 import useRecentTransfers from "../hooks/useRecentTransfers";
 
-export default function TransactionHistory({ walletAddress, chainId }: { walletAddress: string; chainId?: number }) {
+export default function TransactionHistory({ walletAddress, chainId }: { walletAddress: string; chainId: number }) {
   const { transactions, loading, error } = useRecentTransfers(walletAddress, chainId);
 
   return (
