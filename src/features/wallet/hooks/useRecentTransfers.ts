@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
 import {
-  fetchRecentTransfers,
+  openRecentTransfersMonitor,
   mapTransfersToHistory,
+  parseTransferEvent,
+  prependNewTransfers,
   type TransactionHistoryItem,
 } from "../services/erc20Transfers";
 
@@ -21,28 +22,53 @@ export default function useRecentTransfers(walletAddress: string, chainId: numbe
       return;
     }
 
-    const controller = new AbortController();
+    let receivedInitial = false;
     setLoading(true);
     setError("");
-    fetchRecentTransfers(walletAddress, chainId, controller.signal)
-      .then((transfers) => {
-        if (!controller.signal.aborted) {
-          setTransactions(mapTransfersToHistory(transfers, walletAddress));
-        }
-      })
-      .catch((requestError: unknown) => {
-        if (controller.signal.aborted) return;
-        const message = axios.isAxiosError<{ error?: string; message?: string }>(requestError)
-          ? requestError.response?.data?.error ?? requestError.response?.data?.message
-          : undefined;
-        setError(message ?? (requestError instanceof Error ? requestError.message : "Unable to load transactions."));
-        setTransactions([]);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
+    setTransactions([]);
 
-    return () => controller.abort();
+    const source = openRecentTransfersMonitor(walletAddress, chainId);
+    source.addEventListener("initial", (event) => {
+      try {
+        const transfers = parseTransferEvent((event as MessageEvent<string>).data);
+        receivedInitial = true;
+        setTransactions(mapTransfersToHistory(transfers, walletAddress).slice(0, 5));
+        setLoading(false);
+        setError("");
+      } catch {
+        setLoading(false);
+        setError("The transaction monitor returned an invalid initial response.");
+      }
+    });
+    source.addEventListener("update", (event) => {
+      try {
+        const transfers = parseTransferEvent((event as MessageEvent<string>).data);
+        if (transfers.length) {
+          setTransactions((current) => prependNewTransfers(current, transfers, walletAddress));
+        }
+        setError("");
+      } catch {
+        setError("The transaction monitor returned an invalid update.");
+      }
+    });
+    source.addEventListener("monitor-error", (event) => {
+      const messageEvent = event as MessageEvent<string>;
+      try {
+        const payload = JSON.parse(messageEvent.data) as { message?: string };
+        setError(payload.message ?? "Unable to refresh transactions.");
+      } catch {
+        setError("Unable to refresh transactions.");
+      }
+    });
+    source.onopen = () => setError("");
+    source.onerror = () => {
+      setLoading(false);
+      setError(receivedInitial
+        ? "Transaction monitor disconnected; reconnecting…"
+        : "Unable to connect to the transaction monitor; reconnecting…");
+    };
+
+    return () => source.close();
   }, [walletAddress, chainId]);
 
   return { transactions, loading, error };
